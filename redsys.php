@@ -37,12 +37,15 @@ class Redsys extends PaymentModule
 	private	$html = '';
 	private $post_errors = array();
 
+	const LANG_DOMAIN = 'Modules.Redsys.Shop';
+
 	public function __construct()
 	{
 		$this->name = 'redsys';
 		$this->tab = 'payments_gateways';
 		$this->version = '3.0.0';
-		$this->author = 'REDSYS';
+		$this->author = 'REDSYS-MODIF';
+		$this->controllers = array('validation');
 
 		$this->currencies = true;
 		$this->currencies_mode = 'checkbox';
@@ -317,7 +320,7 @@ class Redsys extends PaymentModule
 			$sec_pedido = -1;
 		}
 		$logActivo = "si";
-		escribirLog(" - COOKIE: ".$_COOKIE["P".$orderId]."($orderId) - secPedido: $sec_pedido", $logActivo);
+		// escribirLog(" - COOKIE: ".$_COOKIE["P".$orderId]."($orderId) - secPedido: $sec_pedido", $logActivo);
 		if ($sec_pedido < 9) {
 			setcookie("P".$orderId, ++$sec_pedido, time() + 86400); // 24 horas
 		}
@@ -420,8 +423,24 @@ class Redsys extends PaymentModule
 		$miObj->setParameter("DS_MERCHANT_TERMINAL",$this->terminal);
 		$miObj->setParameter("DS_MERCHANT_MERCHANTURL",$urltienda);
 		//$miObj->setParameter("DS_MERCHANT_URLOK",$urltienda);
-		$miObj->setParameter("DS_MERCHANT_URLOK",$protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'index.php?controller=order-confirmation&id_cart='.$id_cart.'&id_module='.$this->id.'&id_order='.$this->currentOrder.'&key='.$customer->secure_key);
-		$miObj->setParameter("DS_MERCHANT_URLKO",$protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'pedido');
+		// PBS
+		// Creamos un array de claves y valores para serializar y enviar al TPV cifrados
+		$paramsValidacion = array(
+			'id_cart' => $id_cart);
+		serialize(value);
+		$miObj->setParameter("DS_MERCHANT_URLOK",
+            $this->context->link->getModuleLink($this->name, 'validation', array(
+                    'urltpv' => $this->urltpv,
+                    'Ds_SignatureVersion' => 'pruebaversion',
+                    'Ds_MerchantParameters' => 'paramsBase64',
+                    'Ds_Signature' => 'signatureMac'
+                ), true));
+			
+		$miObj->setParameter("DS_MERCHANT_URLKO",
+			$this->context->link->getPageLink('cart', null, null, array(
+                'action' => 'show'
+            ), true));
+		
 
 		//ACTIVAR ESTE SI FRIENDLY_URL ES FALSE:$miObj->setParameter("DS_MERCHANT_URLKO",$protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'index.php?controller=order');
 		$miObj->setParameter("Ds_Merchant_ConsumerLanguage",$idioma_tpv);
@@ -460,17 +479,16 @@ class Redsys extends PaymentModule
                               <input name="Ds_Signature" value="'.$signatureMac.'" type="hidden">
             </form>';
 		$newOption = new PaymentOption();
-		$newOption->setCallToActionText($this->trans('Paga con Tarjeta', array(), 'Modules.Redsys.Shop'))
+		$newOption->setCallToActionText($this->trans('Paga con Tarjeta', array(), self::LANG_DOMAIN))
+					->setLogo(_MODULE_DIR_.$this->name.'/img/' .(isset($this->image) && $this->image ?:  'redsys.png'))
+					->setAdditionalInformation($this->fetch('module:redsys/views/templates/hook/payment.tpl'))
+					->setForm($form_redsys)
+					->setAction($this->urltpv);
 
-		->setLogo(_MODULE_DIR_.'redsys/img/redsys.png')
-		->setAdditionalInformation($this->fetch('module:redsys/views/templates/hook/payment.tpl'))
-		->setForm($form_redsys)
-		->setAction($this->urltpv);
 		$payment_options = [
             $newOption,
         ];
         return $payment_options;	
-		//return $this->display(__FILE__, 'payment.tpl');
 	}
 
 	public function checkCurrency($cart)
