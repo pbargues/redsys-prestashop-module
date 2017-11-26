@@ -113,7 +113,7 @@ class RedsysValidationPOSTModuleFrontController extends ModuleFrontController
                 Context::getContext()->country = new Country((int)$address->id_country);
                 Context::getContext()->customer = new Customer((int)$cart->id_customer);
                 Context::getContext()->language = new Language((int)$cart->id_lang);
-                Context::getContext()->currency = new Currency((int)$cart->id_currency);            
+                Context::getContext()->currency = new Currency((int)$cart->id_currency);
                 
                 /** VALIDACIONES DE DATOS y LIBRERÍA **/
                 //Total

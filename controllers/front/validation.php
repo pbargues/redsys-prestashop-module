@@ -177,6 +177,17 @@ class RedsysValidationModuleFrontController extends ModuleFrontController
         // error_log("VALIDATION NUEVO!!! Redsys17ValidationModuleFrontController");
         // error_log("VARIABLE this->module **********: " . var_export($this->module));
 
+        $allVals = Tools::getAllValues();
+        error_log("TODOS LOS PARAMS DE CART!! " . var_export($cart));
+        foreach ($cart as $key => $value){
+            error_log("PARAM: $key --> $value");
+        }
+        error_log("TODOS LOS PARAMS DE ALLVALLS!! " . var_export($cart));
+        foreach ($allVals as $key => $value){
+            error_log("PARAM: $key --> $value");
+        }
+
+
         if ($cart->id_customer == 0 || $cart->id_address_delivery == 0 || $cart->id_address_invoice == 0 || !$this->module->active) {
             Tools::redirect('index.php?controller=order&step=1');
         }
@@ -208,9 +219,12 @@ class RedsysValidationModuleFrontController extends ModuleFrontController
         //     '{check_address}' => Configuration::get('CHEQUE_ADDRESS'),
         //     '{check_address_html}' => str_replace("\n", '<br />', Configuration::get('CHEQUE_ADDRESS')));
         $mailVars = array();
-
-
-        $this->module->validateOrder((int)$cart->id, Configuration::get('PS_OS_CHEQUE'), $total, $this->module->displayName, null, $mailVars, (int)$currency->id, false, $customer->secure_key);
+        error_log("ESTO ES POR SI ACASO " . (int)$cart->id . " Y EL RESULT: " . Order::getOrderByCartId((int)$cart->id));
+        if(!Order::getOrderByCartId((int)$cart->id)){
+            error_log("ESTO ES VALIDATE");
+            $this->module->validateOrder((int)$cart->id, Configuration::get('_PS_OS_PAYMENT_'), $total, $this->module->displayName, null, $mailVars, (int)$currency->id, false, $customer->secure_key);
+        }
+        error_log("ESTO ES REDIRECT");
         Tools::redirect('index.php?controller=order-confirmation&id_cart='.(int)$cart->id.'&id_module='.(int)$this->module->id.'&id_order='.$this->module->currentOrder.'&key='.$customer->secure_key);
     }
 }

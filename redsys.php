@@ -45,7 +45,7 @@ class Redsys extends PaymentModule
 		$this->tab = 'payments_gateways';
 		$this->version = '3.0.0';
 		$this->author = 'REDSYS-MODIF';
-		$this->controllers = array('validation', 'validationPOST');
+		$this->controllers = array('validation');
 
 		$this->currencies = true;
 		$this->currencies_mode = 'checkbox';
@@ -307,6 +307,13 @@ class Redsys extends PaymentModule
 		if (!$this->checkCurrency($params['cart']))
 			return;
 
+		//URL de Respuesta Online
+        $protocolo = 'http://';
+        if (!empty($_SERVER['HTTPS']))
+        {
+          $protocolo = 'https://';
+        }
+
 		// Valor de compra
 		$currency = new Currency($params['cart']->id_currency);
 		$cantidad = number_format($params['cart']->getOrderTotal(true, Cart::BOTH), 2, '', '');
@@ -391,27 +398,44 @@ class Redsys extends PaymentModule
 		$miObj->setParameter("DS_MERCHANT_TERMINAL",$this->terminal);
 
 		$miObj->setParameter("DS_MERCHANT_MERCHANTURL", 
-			$this->context->link->getModuleLink($this->name, 'validationPOST', array(), true));
+			$this->context->link->getModuleLink($this->name, 'validation', array(), true));
 
-		$paramsValidacion = array();
+		// var_dump($this->module);
 
-		$miObj->setParameter("DS_MERCHANT_URLOK",
-            $this->context->link->getModuleLink($this->name, 'validation', $paramsValidacion, true));
+		// error_log("TODOS LOS PARAMS DE this->module!! ");
+  //       foreach ($this->module as $key => $value){
+  //           error_log("PARAM: $key --> $value");
+  //       }
+
+        // error_log("TODOS LOS PARAMS DE this->context!! ");
+        // foreach ($this->context as $key => $value){
+        //     error_log("PARAM: $key --> " . var_export($value) );
+        // }
+        // Check that this payment option is still available in case the customer changed his address just before the end of the checkout process
+        $moduloRedsys = null;
+        foreach (Module::getPaymentModules() as $module) {
+            if ($module['name'] === 'redsys') {
+            	$moduloRedsys = $module;
+                break;
+            }
+        }
+        // var_dump($this->context);
+
+		$urlOkParams = array(
+			'id_cart'	=> (int)$id_cart,
+			// 'id_module' => (int)$this->context->id_module,
+			'key'		=> $customer->secure_key
+		);
+		$urlOk = $protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__. 'index.php?controller=order-confirmation&id_cart='.(int)$id_cart.'&id_module='.(int)$moduloRedsys['id_module'].'&key='.$customer->secure_key;
+		error_log("LINK URLOK: $urlOk");
+
+		$miObj->setParameter("DS_MERCHANT_URLOK", $urlOk);
 			
 		$miObj->setParameter("DS_MERCHANT_URLKO",
 			$this->context->link->getPageLink('cart', null, null, array(
                 'action' => 'show'
             ), true));
 		
-		//URL de Respuesta Online
-        $protocolo = 'http://';
-        if (!empty($_SERVER['HTTPS']))
-        {
-          $protocolo = 'https://';
-        }
-
-        $urltienda = $protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.
-                     'modules/'.$this->name.'/validation.php';
 		//ACTIVAR ESTE SI FRIENDLY_URL ES FALSE:$miObj->setParameter("DS_MERCHANT_URLKO",$protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'index.php?controller=order');
 		$miObj->setParameter("Ds_Merchant_ConsumerLanguage",$idioma_tpv);
 		$miObj->setParameter("Ds_Merchant_ProductDescription",$productos);
