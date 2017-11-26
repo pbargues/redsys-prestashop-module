@@ -37,47 +37,11 @@ class RedsysValidationPOSTModuleFrontController extends ModuleFrontController
     public function postProcess()
     {
         $cart = $this->context->cart;
-        error_log("VALIDATIONPOST NUEVO!!! Redsys17ValidationModuleFrontController");
-        $allVals = Tools::getAllValues();
-        // error_log("TODOS LOS PARAMS DE CART!! " . var_export($cart));
-        // foreach ($cart as $key => $value){
-        //     error_log("PARAM: $key --> $value");
-        // }
-        error_log("TODOS LOS PARAMS DE ALLVALLS!! " . var_export($cart));
-        foreach ($allVals as $key => $value){
-            error_log("PARAM: $key --> $value");
-        }
-        error_log("TODOS LOS PARAMS DE this->module!! " . var_export($cart));
-        foreach ($this->module as $key => $value){
-            error_log("PARAM: $key --> $value");
-        }
 
         if ($this->module->active != 1) {
             error_log("INITIATION NOT AUTHORIZED!!! Redsys17ValidationModuleFrontController");
             Tools::redirect('index.php?controller=order&step=1');
         }
-
-        // Check that this payment option is still available in case the customer changed his address just before the end of the checkout process
-        // $authorized = false;
-        // foreach (Module::getPaymentModules() as $module) {
-        //     error_log("MODULE NAME: " . $module['name']);
-        //     if ($module['name'] === 'redsys') {
-        //         $authorized = true;
-        //         break;
-        //     }
-        // }
-
-        // if (!$authorized) {
-        //     error_log("VALIDATIONPOST NOT AUTHORIZED!!! Redsys17ValidationModuleFrontController");
-        //     die($this->trans('This payment method is not available.', array(), 'Modules.Checkpayment.Shop'));
-        // }
-
-        // $customer = new Customer($cart->id_customer);
-
-        // if (!Validate::isLoadedObject($customer)) {
-        //     error_log("isLoadedObject NOT AUTHORIZED!!! Redsys17ValidationModuleFrontController");
-        //     Tools::redirect('index.php?controller=order&step=1');
-        // }
 
         $currency = $this->context->currency;
         $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
@@ -89,7 +53,6 @@ class RedsysValidationPOSTModuleFrontController extends ModuleFrontController
         $datos              = Tools::getValue('Ds_MerchantParameters');
         $firma_remota       = Tools::getValue('Ds_Signature');
 
-        error_log("PARAMETROS NUEVO!!! $version || $datos || $firma_remota");
         // Se crea Objeto
         $miObj = new RedsysAPI;
         
@@ -119,9 +82,7 @@ class RedsysValidationPOSTModuleFrontController extends ModuleFrontController
         // /** Log de Errores **/
 
         $pedidoSecuencial = $pedido;
-        //PBS: Sacamos el num de carrito
         $pedido = intval($pedido);
-        // $pedido = intval(substr($pedidoSecuencial, 0, 11));
         /** VALIDACIONES DE LIBRERÍA **/
         if ($firma_local === $firma_remota
             && checkImporte($total)
@@ -129,24 +90,18 @@ class RedsysValidationPOSTModuleFrontController extends ModuleFrontController
             && checkFuc($codigo)
             && checkMoneda($moneda)
             && checkRespuesta($respuesta)) {
-        //     if ($accesoDesde === 'POST') {
 
                 /** Creamos los objetos para confirmar el pedido **/
                 $context = Context::getContext();
                 $cart = new Cart($pedido);
                 $redsys = new redsys();
 
-                error_log("TODOS LOS PARAMS DE CART!! " . var_export($cart));
-                foreach ($cart as $key => $value){
-                    error_log("PARAM: $key --> $value");
-                }
-
                 /** Validamos Objeto carrito **/
                 if ($cart->id_customer == 0
                     || $cart->id_address_delivery == 0
                     || $cart->id_address_invoice == 0) 
                 {
-                     error_log("NOS VAMOS A REDIRECT");
+                    error_log("NOS VAMOS A REDIRECT");
                     Tools::redirect('index.php?controller=order&step=1');
                 }
                 /** Validamos Objeto cliente **/
@@ -160,10 +115,6 @@ class RedsysValidationPOSTModuleFrontController extends ModuleFrontController
                 Context::getContext()->language = new Language((int)$cart->id_lang);
                 Context::getContext()->currency = new Currency((int)$cart->id_currency);            
                 
-        //         if (!Validate::isLoadedObject($customer)) {
-        //             Tools::redirect('index.php?controller=order&step=1');
-        //         }
-
                 /** VALIDACIONES DE DATOS y LIBRERÍA **/
                 //Total
                 $totalCart = $cart->getOrderTotal(true, Cart::BOTH);
@@ -179,9 +130,7 @@ class RedsysValidationPOSTModuleFrontController extends ModuleFrontController
                 if ($monedaOrig == $moneda && $totalOrig == $total && (int)$codigoOrig == (int)$codigo && $respuesta < 101 && checkAutCode($id_trans)) {
                     /** Compra válida **/
                     $mailvars['transaction_id'] = (int)$id_trans;
-                    error_log(" -- "."El pedido con ID de carrito " . $pedido . " es válido y se ha registrado correctamente.");
                     $redsys->validateOrder($pedido, _PS_OS_PAYMENT_, $totalOrig/100, $redsys->displayName, null, $mailvars, (int)$cart->id_currency, false, $customer->secure_key);
-                    error_log("SE REDIRECCIONA A :" . 'index.php?controller=order-confirmation&id_cart='.(int)$cart->id.'&id_module='.(int)$this->module->id.'&id_order='.$this->module->currentOrder.'&key='.$customer->secure_key);
                     Tools::redirect('index.php?controller=order-confirmation&id_cart='.(int)$cart->id.'&id_module='.(int)$this->module->id.'&id_order='.$this->module->currentOrder.'&key='.$customer->secure_key);
                 } else {
                     if (!($monedaOrig == $moneda)) {

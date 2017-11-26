@@ -312,20 +312,6 @@ class Redsys extends PaymentModule
 		$cantidad = number_format($params['cart']->getOrderTotal(true, Cart::BOTH), 2, '', '');
 		$cantidad = (int)$cantidad;
 
-		// // El num. de pedido -> id_Carrito + el tiempo SS
-		// $orderId = $params['cart']->id;
-		// if(isset($_COOKIE["P".$orderId])) {
-		// 	$sec_pedido = $_COOKIE["P".$orderId];
-		// } else {
-		// 	$sec_pedido = -1;
-		// }
-		// $logActivo = "si";
-		// // escribirLog(" - COOKIE: ".$_COOKIE["P".$orderId]."($orderId) - secPedido: $sec_pedido", $logActivo);
-		// if ($sec_pedido < 9) {
-		// 	setcookie("P".$orderId, ++$sec_pedido, time() + 86400); // 24 horas
-		// }
-		// PBS: Cambiamos numpedido para ser el cartId
-		// $numpedido = str_pad($orderId.$sec_pedido, 12, "0", STR_PAD_LEFT); 
 		$numpedido = str_pad($params['cart']->id, 12, "0", STR_PAD_LEFT); 
 		// Fuc
 		$codigo = $this->codigo;
@@ -398,27 +384,14 @@ class Redsys extends PaymentModule
 		$id_cart = (int)$params['cart']->id;		
 		$miObj = new RedsysAPI;
 		$miObj->setParameter("DS_MERCHANT_AMOUNT",$cantidad);
-		//PBS: Cambiamos el número de pedido que se generaba por el número de carrito
-		// $miObj->setParameter("DS_MERCHANT_ORDER",strval($id_cart));
 		$miObj->setParameter("DS_MERCHANT_ORDER",strval($numpedido));
 		$miObj->setParameter("DS_MERCHANT_MERCHANTCODE",$codigo);
 		$miObj->setParameter("DS_MERCHANT_CURRENCY",$moneda);
 		$miObj->setParameter("DS_MERCHANT_TRANSACTIONTYPE",$trans);
 		$miObj->setParameter("DS_MERCHANT_TERMINAL",$this->terminal);
 
-		// $paramsPOST =  = array(
-		// 	'id_cart' => $id_cart,
-		// 	);
 		$miObj->setParameter("DS_MERCHANT_MERCHANTURL", 
 			$this->context->link->getModuleLink($this->name, 'validationPOST', array(), true));
-
-		// $paramsValidacion = array(
-		// 	'id_customer' => $params['cart']->id_customer,
-		// 	'id_cart' => $id_cart,
-		// 	'moneda'  => $moneda,
-		// 	'cantidad'=> $cantidad
-		// );
-		// $paramsSerialized = serialize($paramsValidacion);
 
 		$paramsValidacion = array();
 
@@ -442,11 +415,8 @@ class Redsys extends PaymentModule
 		//ACTIVAR ESTE SI FRIENDLY_URL ES FALSE:$miObj->setParameter("DS_MERCHANT_URLKO",$protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'index.php?controller=order');
 		$miObj->setParameter("Ds_Merchant_ConsumerLanguage",$idioma_tpv);
 		$miObj->setParameter("Ds_Merchant_ProductDescription",$productos);
-		//$miObj->setParameter("Ds_Merchant_Titular",$this->nombre);
 		$miObj->setParameter("Ds_Merchant_Titular",$customer->firstname." ".$customer->lastname);
-		// $miObj->setParameter("Ds_Merchant_MerchantData",sha1($urltienda));
 		$miObj->setParameter("Ds_Merchant_MerchantName",$this->nombre);
-		//$miObj->setParameter("Ds_Merchant_MerchantName",$customer->firstname." ".$customer->lastname);
 		$miObj->setParameter("Ds_Merchant_PayMethods",$this->tipopago);
 		$miObj->setParameter("Ds_Merchant_Module","prestashop_redsys_".$this->version);
 		//Datos de configuración
