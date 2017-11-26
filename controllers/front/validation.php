@@ -18,11 +18,11 @@
 * versions in the future. If you wish to customize PrestaShop for your
 * needs please refer to http://www.prestashop.com for more information.
 *
-*  @author PrestaShop SA <contact@prestashop.com>
-*  @copyright  2007-2015 PrestaShop SA
 *  @license    http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 */
+
+//PBS: Este controlador gestiona la respuesta POST automática que envía redsys justo al confirmar el pago correcto
 
 if (!class_exists('RedsysAPI17')) {
     require_once dirname(__FILE__) . '/../../apiRedsys/apiRedsysFinal.php';
@@ -34,197 +34,152 @@ if (!class_exists('RedsysAPI17')) {
  */
 class RedsysValidationModuleFrontController extends ModuleFrontController
 {
-    // public $ssl = true;
-
-    // const LANG_DOMAIN = 'Modules.Redsys.Shop';
-
-    // public function __construct()
-    // {
-    //     $this->name = 'redsys17';
-    //     $this->tab = 'payments_gateways';
-    //     $this->version = '1.0.5';
-    //     $this->author = 'modulos-prestashop.com';
-    //     $this->controllers = array('validation');
-
-    //     $this->currencies = true;
-    //     $this->currencies_mode = 'checkbox';
-
-    //     $config
-    //         = Configuration::getMultiple(
-    //         array(
-    //             'REDSYS_URLTPV',
-    //             'REDSYS_NOMBRE',
-    //             'REDSYS_CODIGO',
-    //             'REDSYS_TIPOPAGO',
-    //             'REDSYS_TERMINAL',
-    //             'REDSYS_CLAVE256',
-    //             'REDSYS_TRANS',
-    //             'REDSYS_ERROR_PAGO',
-    //             'REDSYS_LOG',
-    //             'REDSYS_IDIOMAS_ESTADO',
-    //             'REDSYS_IMG'
-    //         )
-    //     );
-
-    //     $this->env = $config['REDSYS_URLTPV'];
-    //     switch ($this->env) {
-    //         case 1: //Real
-    //             $this->urltpv = 'https://sis.redsys.es/sis/realizarPago/utf-8';
-    //             break;
-    //         case 2: //Pruebas t
-    //             $this->urltpv = 'https://sis-t.redsys.es:25443/sis/realizarPago/utf-8';
-    //             break;
-    //         case 3: // Pruebas i
-    //             $this->urltpv = 'https://sis-i.redsys.es:25443/sis/realizarPago/utf-8';
-    //             break;
-    //         case 4: //Pruebas d
-    //             $this->urltpv = 'http://sis-d.redsys.es/sis/realizarPago/utf-8';
-    //             break;
-    //     }
-
-    //     if (isset($config['REDSYS_NOMBRE'])) {
-    //         $this->nombre = $config['REDSYS_NOMBRE'];
-    //     }
-    //     if (isset($config['REDSYS_CODIGO'])) {
-    //         $this->codigo = $config['REDSYS_CODIGO'];
-    //     }
-    //     if (isset($config['REDSYS_TIPOPAGO'])) {
-    //         $this->tipopago = $config['REDSYS_TIPOPAGO'];
-    //     }
-    //     if (isset($config['REDSYS_TERMINAL'])) {
-    //         $this->terminal = $config['REDSYS_TERMINAL'];
-    //     }
-    //     if (isset($config['REDSYS_CLAVE256'])) {
-    //         $this->clave256 = $config['REDSYS_CLAVE256'];
-    //     }
-    //     if (isset($config['REDSYS_TRANS'])) {
-    //         $this->trans = $config['REDSYS_TRANS'];
-    //     }
-    //     if (isset($config['REDSYS_ERROR_PAGO'])) {
-    //         $this->error_pago = $config['REDSYS_ERROR_PAGO'];
-    //     }
-    //     if (isset($config['REDSYS_LOG'])) {
-    //         $this->activar_log = $config['REDSYS_LOG'];
-    //     }
-    //     if (isset($config['REDSYS_IDIOMAS_ESTADO'])) {
-    //         $this->idiomas_estado = $config['REDSYS_IDIOMAS_ESTADO'];
-    //     }
-
-    //     if (isset($config['REDSYS_IMG'])) {
-    //         $this->image = $config['REDSYS_IMG'];
-    //     }
-
-    //     $this->imageFolder = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'img' . DIRECTORY_SEPARATOR;
-
-    //     $this->need_instance = 0;
-    //     $this->bootstrap = true;
-    //     parent::__construct();
-    //     $this->displayName = $this->trans('Redsys para Prestashop 1.7', array(), self::LANG_DOMAIN);
-    //     $this->description = $this->trans('Pagos con tarjeta para Prestashop 1.7', array(), self::LANG_DOMAIN);
-    //     $this->ps_versions_compliancy = array('min' => '1.7', 'max' => '1.7.99.99');
-
-    //     $this->page = basename(__FILE__, '.php');
-
-    //     // Mostrar aviso si faltan datos de config.
-    //     if (!isset($this->urltpv)
-    //         || !isset($this->nombre)
-    //         || !isset($this->codigo)
-    //         || !isset($this->tipopago)
-    //         || !isset($this->terminal)
-    //         || !isset($this->clave256)
-    //         || !isset($this->trans)
-    //         || !isset($this->error_pago)
-    //         || !isset($this->activar_log)
-    //         || !isset($this->idiomas_estado)) {
-    //         $this->warning
-    //             = $this->trans(
-    //             'Faltan datos por configurar en el módulo de Redsys.',
-    //             array(),
-    //             self::LANG_DOMAIN
-    //         );
-    //     }
-    // }
-    /**
-     * @see FrontController::initContent()
-     */
-    // public function initContent()
-    // {
-    //     error_log("ESTAMOS EN INITCONTENT!!! Redsys17ValidationModuleFrontController");
-    //     parent::initContent();
-
-    //     $cart = $this->context->cart;
-    //     if (!$this->module->checkCurrency($cart)) {
-    //         Tools::redirect('index.php?controller=order');
-    //     }
-
-    //     $this->context->smarty->assign(array(
-    //         'nbProducts' => $cart->nbProducts(),
-    //         'cust_currency' => $cart->id_currency,
-    //         'currencies' => $this->module->getCurrency((int)$cart->id_currency),
-    //         'total' => $cart->getOrderTotal(true, Cart::BOTH),
-    //         'isoCode' => $this->context->language->iso_code,
-    //         'this_path' => $this->module->getPathUri(),
-    //         'this_path_check' => $this->module->getPathUri(),
-    //         'this_path_ssl' => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->module->name.'/'
-    //     ));
-
-    //     $this->setTemplate('module:redsys17/views/templates/front/payment.tpl');
-    // }
-
     public function postProcess()
     {
         $cart = $this->context->cart;
-        // error_log("VALIDATION NUEVO!!! Redsys17ValidationModuleFrontController");
-        // error_log("VARIABLE this->module **********: " . var_export($this->module));
 
-        $allVals = Tools::getAllValues();
-        error_log("TODOS LOS PARAMS DE CART!! " . var_export($cart));
-        foreach ($cart as $key => $value){
-            error_log("PARAM: $key --> $value");
-        }
-        error_log("TODOS LOS PARAMS DE ALLVALLS!! " . var_export($cart));
-        foreach ($allVals as $key => $value){
-            error_log("PARAM: $key --> $value");
-        }
-
-
-        if ($cart->id_customer == 0 || $cart->id_address_delivery == 0 || $cart->id_address_invoice == 0 || !$this->module->active) {
-            Tools::redirect('index.php?controller=order&step=1');
-        }
-
-        // Check that this payment option is still available in case the customer changed his address just before the end of the checkout process
-        $authorized = false;
-        foreach (Module::getPaymentModules() as $module) {
-            if ($module['name'] === 'redsys') {
-                $authorized = true;
-                break;
-            }
-        }
-
-        if (!$authorized) {
-            die($this->trans('This payment method is not available.', array(), 'Modules.Checkpayment.Shop'));
-        }
-
-        $customer = new Customer($cart->id_customer);
-
-        if (!Validate::isLoadedObject($customer)) {
+        if ($this->module->active != 1) {
+            error_log("INITIATION NOT AUTHORIZED!!! Redsys17ValidationModuleFrontController");
             Tools::redirect('index.php?controller=order&step=1');
         }
 
         $currency = $this->context->currency;
         $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
 
-        // $mailVars =    array(
-        //     '{check_name}' => Configuration::get('CHEQUE_NAME'),
-        //     '{check_address}' => Configuration::get('CHEQUE_ADDRESS'),
-        //     '{check_address_html}' => str_replace("\n", '<br />', Configuration::get('CHEQUE_ADDRESS')));
-        $mailVars = array();
-        error_log("ESTO ES POR SI ACASO " . (int)$cart->id . " Y EL RESULT: " . Order::getOrderByCartId((int)$cart->id));
-        if(!Order::getOrderByCartId((int)$cart->id)){
-            error_log("ESTO ES VALIDATE");
-            $this->module->validateOrder((int)$cart->id, Configuration::get('_PS_OS_PAYMENT_'), $total, $this->module->displayName, null, $mailVars, (int)$currency->id, false, $customer->secure_key);
+
+
+        /** Recoger datos de respuesta **/
+        $version            = Tools::getValue('Ds_SignatureVersion');
+        $datos              = Tools::getValue('Ds_MerchantParameters');
+        $firma_remota       = Tools::getValue('Ds_Signature');
+
+        // Se crea Objeto
+        $miObj = new RedsysAPI;
+        
+        // /** Se decodifican los datos enviados y se carga el array de datos **/
+        $decodec = $miObj->decodeMerchantParameters($datos);
+
+        // /** Clave **/
+        $kc = Configuration::get('REDSYS_CLAVE256');
+        
+        /** Se calcula la firma **/
+        $firma_local = $miObj->createMerchantSignatureNotif($kc,$datos);
+        
+        /** Extraer datos de la notificación **/
+        $total     = $miObj->getParameter('Ds_Amount');
+        $pedido    = $miObj->getParameter('Ds_Order');
+        $codigo    = $miObj->getParameter('Ds_MerchantCode');
+        $moneda    = $miObj->getParameter('Ds_Currency');
+        $respuesta = $miObj->getParameter('Ds_Response');
+        $id_trans = $miObj->getParameter('Ds_AuthorisationCode');
+        
+        /** Código de comercio **/
+        $codigoOrig = Configuration::get('REDSYS_CODIGO');
+        
+        /** Pedidos Cancelados **/
+        $error_pago = Configuration::get('REDSYS_ERROR_PAGO');
+        
+        // /** Log de Errores **/
+
+        $pedidoSecuencial = $pedido;
+        $pedido = intval($pedido);
+        /** VALIDACIONES DE LIBRERÍA **/
+        if ($firma_local === $firma_remota
+            && checkImporte($total)
+            && checkPedidoNum($pedido)
+            && checkFuc($codigo)
+            && checkMoneda($moneda)
+            && checkRespuesta($respuesta)) {
+
+                /** Creamos los objetos para confirmar el pedido **/
+                $context = Context::getContext();
+                $cart = new Cart($pedido);
+                $redsys = new redsys();
+
+                /** Validamos Objeto carrito **/
+                if ($cart->id_customer == 0
+                    || $cart->id_address_delivery == 0
+                    || $cart->id_address_invoice == 0) 
+                {
+                    error_log("NOS VAMOS A REDIRECT");
+                    Tools::redirect('index.php?controller=order&step=1');
+                }
+                /** Validamos Objeto cliente **/
+                $customer = new Customer((int)$cart->id_customer);
+                
+                /** Donet **/
+                Context::getContext()->customer = $customer;
+                $address = new Address((int)$cart->id_address_invoice);
+                Context::getContext()->country = new Country((int)$address->id_country);
+                Context::getContext()->customer = new Customer((int)$cart->id_customer);
+                Context::getContext()->language = new Language((int)$cart->id_lang);
+                Context::getContext()->currency = new Currency((int)$cart->id_currency);
+                
+                /** VALIDACIONES DE DATOS y LIBRERÍA **/
+                //Total
+                $totalCart = $cart->getOrderTotal(true, Cart::BOTH);
+                $totalOrig = number_format($totalCart, 2, '', '');
+                
+                // ID Moneda interno
+                $currencyOrig = new Currency($cart->id_currency);
+                // ISO Moneda
+                $monedaOrig = $currencyOrig->iso_code_num;
+                // DsResponse
+                $respuesta = (int)$respuesta;
+
+                if ($monedaOrig == $moneda && $totalOrig == $total && (int)$codigoOrig == (int)$codigo && $respuesta < 101 && checkAutCode($id_trans)) {
+                    /** Compra válida **/
+                    $mailvars['transaction_id'] = (int)$id_trans;
+                    $redsys->validateOrder($pedido, _PS_OS_PAYMENT_, $totalOrig/100, $redsys->displayName, null, $mailvars, (int)$cart->id_currency, false, $customer->secure_key);
+                    Tools::redirect('index.php?controller=order-confirmation&id_cart='.(int)$cart->id.'&id_module='.(int)$this->module->id.'&id_order='.$this->module->currentOrder.'&key='.$customer->secure_key);
+                } else {
+                    if (!($monedaOrig == $moneda)) {
+                        error_log(" -- "."La moneda no coincide. ($monedaOrig : $moneda)");
+                    }
+                    if (!($totalOrig == $total)) {
+                        error_log(" -- "."El importe total no coincide. ($totalOrig : $total)");
+                    }
+                    if (!((int)$codigoOrig == (int)$codigo)) {
+                        error_log(" -- "."El código de comercio no coincide. ($codigoOrig : $codigo)");
+                    }
+                    if (!checkAutCode($id_trans)){
+                        error_log(" -- "."Ds_AuthorisationCode inválido. ($id_trans)");
+                    }
+                    if ($error_pago=="no"){
+                        /** se anota el pedido como no pagado **/
+                        $redsys->validateOrder($pedido, _PS_OS_ERROR_, 0, $redsys->displayName, 'errores:'.$respuesta);
+                    }
+                    error_log(" -- "."El pedido con ID de carrito " . $pedido . " es inválido.");
+                }
+            } else {
+                if ($accesoDesde === 'POST') {
+                    if (!($firma_local === $firma_remota)) {
+                        error_log(" -- "."La firma no coincide.");
+                    }
+                    if (!checkImporte($total)){
+                        error_log(" -- "."Ds_Amount inválido.");
+                    }
+                    if (!checkPedidoNum($pedido)){
+                        error_log(" -- "."Ds_Order inválido.");
+                    }
+                    if (!checkFuc($codigo)){
+                        error_log(" -- "."Ds_MerchantCode inválido.");
+                    }
+                    if (!checkMoneda($moneda)){
+                        error_log(" -- "."Ds_Currency inválido.");
+                    }
+                    if (!checkRespuesta($respuesta)){
+                        error_log(" -- "."Ds_Response inválido.");
+                    }
+                    if ($error_pago=="no"){
+                        /** se anota el pedido como no pagado **/
+                        $redsys->validateOrder($pedido, _PS_OS_ERROR_, 0, $redsys->displayName, 'errores:'.$respuesta);
+                    }
+                    error_log(" -- "."Notificación: El pedido con ID de carrito " . $pedido . " es inválido.");
+                } else if ($accesoDesde === 'GET') {
+                    Tools::redirect('index.php?controller=order&step=1');
+                }
         }
-        error_log("ESTO ES REDIRECT");
-        Tools::redirect('index.php?controller=order-confirmation&id_cart='.(int)$cart->id.'&id_module='.(int)$this->module->id.'&id_order='.$this->module->currentOrder.'&key='.$customer->secure_key);
+        Tools::redirect($this->context->link->getPageLink('cart', null, null, array('action' => 'show'), true));
     }
 }
