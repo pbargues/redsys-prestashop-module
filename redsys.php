@@ -45,7 +45,7 @@ class Redsys extends PaymentModule
 		$this->tab = 'payments_gateways';
 		$this->version = '3.0.0';
 		$this->author = 'REDSYS-MODIF';
-		$this->controllers = array('validation');
+		$this->controllers = array('validation', 'validationPOST');
 
 		$this->currencies = true;
 		$this->currencies_mode = 'checkbox';
@@ -312,26 +312,21 @@ class Redsys extends PaymentModule
 		$cantidad = number_format($params['cart']->getOrderTotal(true, Cart::BOTH), 2, '', '');
 		$cantidad = (int)$cantidad;
 
-		// El num. de pedido -> id_Carrito + el tiempo SS
-		$orderId = $params['cart']->id;
-		if(isset($_COOKIE["P".$orderId])) {
-			$sec_pedido = $_COOKIE["P".$orderId];
-		} else {
-			$sec_pedido = -1;
-		}
-		$logActivo = "si";
-		// escribirLog(" - COOKIE: ".$_COOKIE["P".$orderId]."($orderId) - secPedido: $sec_pedido", $logActivo);
-		if ($sec_pedido < 9) {
-			setcookie("P".$orderId, ++$sec_pedido, time() + 86400); // 24 horas
-		}
-		$numpedido = str_pad($orderId.$sec_pedido, 12, "0", STR_PAD_LEFT); 
-		try {
-			// Desinstalación V.2.8.5
-			escribirLog("DROP TABLE "._DB_PREFIX_."redsys", $logActivo);
-			escribirLog("Tabla de la versión 2.8.5 eliminada.", $logActivo);
-		} catch (Exception $e) {
-			escribirLog("La tabla de la versión 2.8.5 no existe.", $logActivo);
-		}		
+		// // El num. de pedido -> id_Carrito + el tiempo SS
+		// $orderId = $params['cart']->id;
+		// if(isset($_COOKIE["P".$orderId])) {
+		// 	$sec_pedido = $_COOKIE["P".$orderId];
+		// } else {
+		// 	$sec_pedido = -1;
+		// }
+		// $logActivo = "si";
+		// // escribirLog(" - COOKIE: ".$_COOKIE["P".$orderId]."($orderId) - secPedido: $sec_pedido", $logActivo);
+		// if ($sec_pedido < 9) {
+		// 	setcookie("P".$orderId, ++$sec_pedido, time() + 86400); // 24 horas
+		// }
+		// PBS: Cambiamos numpedido para ser el cartId
+		// $numpedido = str_pad($orderId.$sec_pedido, 12, "0", STR_PAD_LEFT); 
+		$numpedido = str_pad($params['cart']->id, 12, "0", STR_PAD_LEFT); 
 		// Fuc
 		$codigo = $this->codigo;
 		// ISO Moneda
@@ -339,19 +334,6 @@ class Redsys extends PaymentModule
 		// Tipo de Transacción
 		$trans = $this->trans;
 
-		//URL de Respuesta Online
-		/*if (empty($_SERVER['HTTPS']))
-		{
-			$protocolo = 'http://';
-			$urltienda = $protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'modules/redsys/validation.php';
-		}
-		else
-		{
-			$protocolo = 'https://';
-			$urltienda = $protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'modules/redsys/validation.php';
-		}*/
-		$protocolo = 'http://';
-		$urltienda = $protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'modules/redsys/validation.php';
 		//Product Description
 		$products = $params['cart']->getProducts();
 		$productos = '';
@@ -416,38 +398,53 @@ class Redsys extends PaymentModule
 		$id_cart = (int)$params['cart']->id;		
 		$miObj = new RedsysAPI;
 		$miObj->setParameter("DS_MERCHANT_AMOUNT",$cantidad);
+		//PBS: Cambiamos el número de pedido que se generaba por el número de carrito
+		// $miObj->setParameter("DS_MERCHANT_ORDER",strval($id_cart));
 		$miObj->setParameter("DS_MERCHANT_ORDER",strval($numpedido));
 		$miObj->setParameter("DS_MERCHANT_MERCHANTCODE",$codigo);
 		$miObj->setParameter("DS_MERCHANT_CURRENCY",$moneda);
 		$miObj->setParameter("DS_MERCHANT_TRANSACTIONTYPE",$trans);
 		$miObj->setParameter("DS_MERCHANT_TERMINAL",$this->terminal);
-		$miObj->setParameter("DS_MERCHANT_MERCHANTURL",$urltienda);
-		//$miObj->setParameter("DS_MERCHANT_URLOK",$urltienda);
-		// PBS
-		// Creamos un array de claves y valores para serializar y enviar al TPV cifrados
-		$paramsValidacion = array(
-			'id_cart' => $id_cart);
-		serialize(value);
+
+		// $paramsPOST =  = array(
+		// 	'id_cart' => $id_cart,
+		// 	);
+		$miObj->setParameter("DS_MERCHANT_MERCHANTURL", 
+			$this->context->link->getModuleLink($this->name, 'validationPOST', array(), true));
+
+		// $paramsValidacion = array(
+		// 	'id_customer' => $params['cart']->id_customer,
+		// 	'id_cart' => $id_cart,
+		// 	'moneda'  => $moneda,
+		// 	'cantidad'=> $cantidad
+		// );
+		// $paramsSerialized = serialize($paramsValidacion);
+
+		$paramsValidacion = array();
+
 		$miObj->setParameter("DS_MERCHANT_URLOK",
-            $this->context->link->getModuleLink($this->name, 'validation', array(
-                    'urltpv' => $this->urltpv,
-                    'Ds_SignatureVersion' => 'pruebaversion',
-                    'Ds_MerchantParameters' => 'paramsBase64',
-                    'Ds_Signature' => 'signatureMac'
-                ), true));
+            $this->context->link->getModuleLink($this->name, 'validation', $paramsValidacion, true));
 			
 		$miObj->setParameter("DS_MERCHANT_URLKO",
 			$this->context->link->getPageLink('cart', null, null, array(
                 'action' => 'show'
             ), true));
 		
+		//URL de Respuesta Online
+        $protocolo = 'http://';
+        if (!empty($_SERVER['HTTPS']))
+        {
+          $protocolo = 'https://';
+        }
 
+        $urltienda = $protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.
+                     'modules/'.$this->name.'/validation.php';
 		//ACTIVAR ESTE SI FRIENDLY_URL ES FALSE:$miObj->setParameter("DS_MERCHANT_URLKO",$protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'index.php?controller=order');
 		$miObj->setParameter("Ds_Merchant_ConsumerLanguage",$idioma_tpv);
 		$miObj->setParameter("Ds_Merchant_ProductDescription",$productos);
 		//$miObj->setParameter("Ds_Merchant_Titular",$this->nombre);
 		$miObj->setParameter("Ds_Merchant_Titular",$customer->firstname." ".$customer->lastname);
-		$miObj->setParameter("Ds_Merchant_MerchantData",sha1($urltienda));
+		// $miObj->setParameter("Ds_Merchant_MerchantData",sha1($urltienda));
 		$miObj->setParameter("Ds_Merchant_MerchantName",$this->nombre);
 		//$miObj->setParameter("Ds_Merchant_MerchantName",$customer->firstname." ".$customer->lastname);
 		$miObj->setParameter("Ds_Merchant_PayMethods",$this->tipopago);
