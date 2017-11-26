@@ -400,17 +400,6 @@ class Redsys extends PaymentModule
 		$miObj->setParameter("DS_MERCHANT_MERCHANTURL", 
 			$this->context->link->getModuleLink($this->name, 'validation', array(), true));
 
-		// var_dump($this->module);
-
-		// error_log("TODOS LOS PARAMS DE this->module!! ");
-  //       foreach ($this->module as $key => $value){
-  //           error_log("PARAM: $key --> $value");
-  //       }
-
-        // error_log("TODOS LOS PARAMS DE this->context!! ");
-        // foreach ($this->context as $key => $value){
-        //     error_log("PARAM: $key --> " . var_export($value) );
-        // }
         // Check that this payment option is still available in case the customer changed his address just before the end of the checkout process
         $moduloRedsys = null;
         foreach (Module::getPaymentModules() as $module) {
@@ -419,15 +408,8 @@ class Redsys extends PaymentModule
                 break;
             }
         }
-        // var_dump($this->context);
 
-		$urlOkParams = array(
-			'id_cart'	=> (int)$id_cart,
-			// 'id_module' => (int)$this->context->id_module,
-			'key'		=> $customer->secure_key
-		);
 		$urlOk = $protocolo.$_SERVER['HTTP_HOST'].__PS_BASE_URI__. 'index.php?controller=order-confirmation&id_cart='.(int)$id_cart.'&id_module='.(int)$moduloRedsys['id_module'].'&key='.$customer->secure_key;
-		error_log("LINK URLOK: $urlOk");
 
 		$miObj->setParameter("DS_MERCHANT_URLOK", $urlOk);
 			
